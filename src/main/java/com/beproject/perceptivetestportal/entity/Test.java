@@ -1,13 +1,21 @@
 package com.beproject.perceptivetestportal.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import org.hibernate.annotations.CreationTimestamp;
 
 @Entity
 @Table(name = "tests")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Test {
 
     @Id
@@ -22,75 +30,67 @@ public class Test {
 
     private Integer durationInMinutes;
 
+    private LocalDateTime startTime;
+    private LocalDateTime endTime;
+
+    @Builder.Default
     @Column(nullable = false)
     private boolean isPublic = false;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "creator_id", nullable = false)
+    // ✅ This prevents the "Infinite Loop" when sending the Test as JSON
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "password", "createdAt"})
     private User createdBy;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     private TestStatus status = TestStatus.DRAFT;
 
-    @OneToMany(mappedBy = "test", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ManyToMany
+    @JoinTable(
+        name = "test_questions",
+        joinColumns = @JoinColumn(name = "test_id"),
+        inverseJoinColumns = @JoinColumn(name = "question_id")
+    )
+    @Builder.Default
+    @JsonIgnoreProperties("tests") // ✅ Prevents loop if Question also references Test
     private List<Question> questions = new ArrayList<>();
+
+    @ManyToMany
+    @JoinTable(
+        name = "test_assignments",
+        joinColumns = @JoinColumn(name = "test_id"),
+        inverseJoinColumns = @JoinColumn(name = "group_id")
+    )
+    @Builder.Default
+    @JsonIgnoreProperties("assignedTests")
+    private List<Group> assignedGroups = new ArrayList<>();
 
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;
 
-    // Default Constructor (Required by JPA)
-    public Test() {}
-
-    // Parameterized Constructor
-    public Test(String title, String description, Integer durationInMinutes, User createdBy) {
-        this.title = title;
-        this.description = description;
-        this.durationInMinutes = durationInMinutes;
-        this.createdBy = createdBy;
-        this.status = TestStatus.DRAFT;
+    public enum TestStatus {
+        DRAFT, PUBLISHED, ARCHIVED
     }
 
-    // --- Relationship Helper Methods ---
+    // Helper methods for relationships
     public void addQuestion(Question question) {
         questions.add(question);
-        question.setTest(this);
+        if (question.getTests() != null) {
+            question.getTests().add(this);
+        }
     }
 
     public void removeQuestion(Question question) {
         questions.remove(question);
-        question.setTest(null);
+        if (question.getTests() != null) {
+            question.getTests().remove(this);
+        }
     }
-public enum TestStatus {
-        DRAFT, PUBLISHED, ARCHIVED
+
+    public void assignToGroup(Group group) {
+        assignedGroups.add(group);
     }
-
-    @Enumerated(EnumType.STRING)
-    
-    // --- Getters and Setters ---
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-
-    public String getTitle() { return title; }
-    public void setTitle(String title) { this.title = title; }
-
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
-
-    public Integer getDurationInMinutes() { return durationInMinutes; }
-    public void setDurationInMinutes(Integer durationInMinutes) { this.durationInMinutes = durationInMinutes; }
-
-    public boolean isPublic() { return isPublic; }
-    public void setPublic(boolean isPublic) { this.isPublic = isPublic; }
-
-    public User getCreatedBy() { return createdBy; }
-    public void setCreatedBy(User createdBy) { this.createdBy = createdBy; }
-
-    public TestStatus getStatus() { return status; }
-    public void setStatus(TestStatus status) { this.status = status; }
-
-    public List<Question> getQuestions() { return questions; }
-    public void setQuestions(List<Question> questions) { this.questions = questions; }
-
-    public LocalDateTime getCreatedAt() { return createdAt; }
 }

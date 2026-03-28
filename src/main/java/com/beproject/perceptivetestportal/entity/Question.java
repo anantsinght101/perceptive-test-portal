@@ -1,116 +1,64 @@
 package com.beproject.perceptivetestportal.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
+import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "questions")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Question {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "question_text", nullable = false)
-    private String questionText;
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private String content;
 
-    @Column(name = "option_a", nullable = false)
-    private String optionA;
+    @Enumerated(EnumType.STRING)
+    private QuestionType type;
 
-    @Column(name = "option_b", nullable = false)
-    private String optionB;
+    @Enumerated(EnumType.STRING)
+    private Difficulty difficulty;
 
-    @Column(name = "option_c", nullable = false)
-    private String optionC;
+    private String category; // e.g., "Java", "Python", "Math"
 
-    @Column(name = "option_d", nullable = false)
-    private String optionD;
+    @ElementCollection
+    @CollectionTable(name = "question_options", joinColumns = @Id)
+    @Column(name = "option_text")
+    @Builder.Default
+    private List<String> options = new ArrayList<>();
 
-    @Column(name = "correct_option", nullable = false)
-    private String correctOption;
+    private String correctAnswer;
 
-    @Column(name = "difficulty_level")
-    private String difficultyLevel;
+    @Column(columnDefinition = "TEXT")
+    private String explanation;
 
-    // 🔗 Many questions belong to one test
-    @ManyToOne
-    @JoinColumn(name = "test_id", nullable = false)
-    private Test test;
+    @ManyToMany(mappedBy = "questions")
+    @Builder.Default
+    // ✅ Prevents Question -> Test -> Question loop
+    @JsonIgnoreProperties("questions") 
+    private List<Test> tests = new ArrayList<>();
 
-    @Column(name = "created_at")
-    private LocalDateTime createdAt = LocalDateTime.now();
+    @CreationTimestamp
+    @Column(updatable = false)
+    private LocalDateTime createdAt;
 
-    // getters & setters
-
-    public Long getId() {
-        return id;
+    public enum QuestionType {
+        MCQ, TRUE_FALSE, SHORT_ANSWER
     }
 
-    public String getQuestionText() {
-        return questionText;
-    }
-
-    public void setQuestionText(String questionText) {
-        this.questionText = questionText;
-    }
-
-    public String getOptionA() {
-        return optionA;
-    }
-
-    public void setOptionA(String optionA) {
-        this.optionA = optionA;
-    }
-
-    public String getOptionB() {
-        return optionB;
-    }
-
-    public void setOptionB(String optionB) {
-        this.optionB = optionB;
-    }
-
-    public String getOptionC() {
-        return optionC;
-    }
-
-    public void setOptionC(String optionC) {
-        this.optionC = optionC;
-    }
-
-    public String getOptionD() {
-        return optionD;
-    }
-
-    public void setOptionD(String optionD) {
-        this.optionD = optionD;
-    }
-
-    public String getCorrectOption() {
-        return correctOption;
-    }
-
-    public void setCorrectOption(String correctOption) {
-        this.correctOption = correctOption;
-    }
-
-    public String getDifficultyLevel() {
-        return difficultyLevel;
-    }
-
-    public void setDifficultyLevel(String difficultyLevel) {
-        this.difficultyLevel = difficultyLevel;
-    }
-
-    public Test getTest() {
-        return test;
-    }
-
-    public void setTest(Test test) {
-        this.test = test;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
+    public enum Difficulty {
+        EASY, MEDIUM, HARD
     }
 }

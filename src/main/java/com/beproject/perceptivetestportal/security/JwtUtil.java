@@ -7,18 +7,20 @@ import io.jsonwebtoken.security.Keys;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
-import java.nio.charset.StandardCharsets;
 import java.security.Key;
+import java.util.Base64;
 import java.util.Date;
 
 @Component
 public class JwtUtil {
 
-    // Ensures key is >= 256 bits for HS256 algorithm
-    private static final String SECRET_KEY = "yourSuperSecretKeyForJwtPerceptiveTestPortalApp12345678901234567890";
+    // ✅ Our static, permanent key
+    private static final String SECRET_STRING = "TaK+T38/7XQ1G4n9D2b8Y9kR6w3zC4vB+H8eM2qA5tE=";
 
+    // ✅ Single method to decode the key
     private Key getSignKey() {
-        return Keys.hmacShaKeyFor(SECRET_KEY.getBytes(StandardCharsets.UTF_8));
+        byte[] keyBytes = Base64.getDecoder().decode(SECRET_STRING);
+        return Keys.hmacShaKeyFor(keyBytes);
     }
 
     public String generateToken(String username) {
