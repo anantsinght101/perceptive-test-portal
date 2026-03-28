@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perceptive | Login</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+
+        
+        body {
+            background: linear-gradient(to bottom, rgba(92, 77, 66, 0.8) 0%, rgba(92, 77, 66, 0.8) 100%), 
+                        url("assets/img/bg-masthead.jpg") no-repeat center center;
+            background-size: cover;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            margin: 0;
+            padding-top: 60px;
+            padding-bottom: 60px;
+            overflow: hidden;
+        }
+        .header-bar {
+            display: flex; align-items: center; justify-content: space-between;
+            background-color: #5C4D42; padding: 10px 20px; color: white;
+            font-size: 1.3em; font-weight: bold; width: 100%; position: fixed;
+            top: 0; left: 0; z-index: 1000;
+        }
+        .logo { height: 35px; width: 35px; margin-right: 10px; }
+        .home-button {
+            background-color: #DED7C7; color: black; padding: 6px 12px;
+            border: none; border-radius: 4px; text-decoration: none;
+            font-weight: bold; font-size: 1em; box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+        }
+        .home-button:hover { background-color: #A0522D; box-shadow: 0 0 8px rgba(0, 0, 0, 0.3); }
+        .content { flex: 1; display: flex; align-items: center; justify-content: center; width: 100%; }
+        .card { width: 100%; max-width: 500px; padding: 10px; border: none; }
+        .profile-image-pic { width: 80px; height: 80px; object-fit: cover; border-radius: 50%; }
+        .btn-color { background-color: #0e1c36; color: #fff; font-size: 1em; padding: 8px; }
+        .cardbody-color { background: #DED7C7; border-radius: 10px; }
+        .login-header { font-weight: bold; font-size: 1.3em; color: #5C4D42; padding: 5px; display: block; }
+        .footer { background-color: #5C4D42; color: white; width: 100%; text-align: center; padding: 10px 0; position: fixed; bottom: 0; left: 0; }
+        .social-icons a { font-size: 1.5em; margin: 0 10px; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="header-bar">
+        <div class="d-flex align-items-center">
+            <img src="assets/img/logo1.png" alt="Logo" class="logo">
+            <span>Perceptive AI</span>
+        </div>
+        <a href="index.html" class="home-button">Home</a>
+    </div>
+
+    <div class="content">
+        <div class="card shadow-lg">
+            <form id="loginForm" class="card-body cardbody-color text-center p-4" >
+                <h2 class="login-header">Login</h2>
+                <hr>
+                <img src="assets/img/logo1.png" class="profile-image-pic img-thumbnail my-2" alt="profile">
+                
+                <div class="mb-3">
+                    <input type="email" class="form-control" name="email" placeholder="Email" required>
+                </div>
+                <div class="mb-3">
+                    <input type="password" class="form-control" name="password" placeholder="Password" required>
+                </div>
+                
+                <button type="submit" class="btn btn-color px-4 mb-2 w-100">Login</button>
+                
+                <div class="form-text text-dark">Not Registered?  
+                    <a href="signup.html" class="text-dark fw-bold">Create an Account</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container d-flex flex-column align-items-center">
+            <div class="social-icons mt-1">
+                <a href="#"><i class="bi bi-instagram" style="color: #E1306C;"></i></a>
+                <a href="#"><i class="bi bi-linkedin" style="color: #0A66C2;"></i></a>
+                <a href="#"><i class="bi bi-github" style="color: white;"></i></a>
+                <a href="#"><i class="bi bi-twitter" style="color: #1DA1F2;"></i></a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData.entries());
+
+    try {
+        const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+
+            localStorage.setItem('token', result.token); 
+
+            setTimeout(() => {
+                if (result.role === 'TEACHER') {
+                    window.location.href = '/teacher-dashboard.html';
+                } else {
+                    window.location.href = '/student-dashboard.html';
+                }
+            }, 100);
+            
+        } else {
+            const errorText = await response.text();
+            alert("Login Failed: " + errorText);
+        }
+    } catch (err) {
+        alert("Connection lost or server down.");
+    }
+});
+</script>
+</body>
+</html>

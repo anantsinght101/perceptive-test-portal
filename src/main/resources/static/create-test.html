@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perceptive AI | Create Test</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(to bottom, rgba(30, 39, 46, 0.9) 0%, rgba(30, 39, 46, 0.9) 100%);
+            font-family: 'Inter', sans-serif;
+            color: #f8f9fa;
+            min-height: 100vh;
+        }
+        .container { margin-top: 50px; margin-bottom: 50px; }
+        .card { background: #2f3640; border: none; color: white; border-radius: 12px; max-width: 700px; margin: auto; }
+        .form-control { background: #353b48; border: 1px solid #485460; color: white; }
+        .form-control:focus { background: #485460; color: white; border-color: #00a8ff; box-shadow: none; }
+        .btn-primary { background: #00a8ff; border: none; width: 100%; font-weight: bold; padding: 10px; }
+        .btn-assign { background: #d2dae2; color: #2f3640; border: none; margin-top: 10px; font-weight: 500; }
+        .header-bar { background: #050505; padding: 15px; text-align: center; margin-bottom: 30px; }
+    </style>
+</head>
+<body>
+
+    <div class="header-bar">
+        <h2 class="h4 mb-0">Perceptive AI | Test Creator</h2>
+    </div>
+
+    <div class="container">
+        <div class="card p-4 shadow-lg">
+            <h4 class="text-center mb-4 text-info">Test Configuration</h4>
+            <form id="createTestForm">
+                <div class="row">
+                    <div class="col-md-12 mb-3">
+                        <label class="form-label">Test Title</label>
+                        <input type="text" name="title" class="form-control" placeholder="e.g. Java Fundamentals" required>
+                    </div>
+                    <div class="col-md-12 mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea name="description" class="form-control" rows="2" placeholder="Briefly describe the test contents"></textarea>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Duration (Minutes)</label>
+                        <input type="number" name="durationInMinutes" class="form-control" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Visibility</label>
+                        <select name="isPublic" class="form-control">
+                            <option value="false">Private (Assigned Only)</option>
+                            <option value="true">Public (Open for All)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Start Time</label>
+                        <input type="datetime-local" name="startTime" class="form-control" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">End Time</label>
+                        <input type="datetime-local" name="endTime" class="form-control" required>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary mt-3">CREATE TEST CONTAINER</button>
+
+                <hr class="mt-4">
+                <div class="text-center">
+                    <p class="text-muted small mb-2">Assignment Actions (Coming Soon)</p>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-assign flex-grow-1 disabled">Assign to Student</button>
+                        <button type="button" class="btn btn-assign flex-grow-1 disabled">Assign to Group</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('createTestForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const token = localStorage.getItem('token');
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData.entries());
+            
+            // Convert string "true"/"false" to actual boolean
+            data.isPublic = data.isPublic === "true";
+
+            try {
+                const response = await fetch('/api/tests/create', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    alert("Test Created Successfully!");
+                    window.location.href = "teacher-dashboard.html";
+                } else {
+                    alert("Failed to create test. Please check permissions.");
+                }
+            } catch (err) {
+                console.error(err);
+                alert("Server error. Check connection.");
+            }
+        });
+    </script>
+</body>
+</html>

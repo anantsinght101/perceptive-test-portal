@@ -34,13 +34,13 @@ public class JwtFilter extends OncePerRequestFilter {
             @NonNull FilterChain filterChain)
             throws ServletException, IOException {
 
-        String path = request.getServletPath();
+       String path = request.getServletPath();
 
-        // Skip token validation for public endpoints
-        if (path.equals("/auth/login") || path.equals("/auth/register")) {
-            filterChain.doFilter(request, response);
-            return;
-        }
+// Skip token validation for public endpoints
+if (path.startsWith("/api/auth/") || path.startsWith("/auth/") || path.contains("signup") || path.contains("register") || path.contains("login")) {
+    filterChain.doFilter(request, response);
+    return;
+}
 
         final String authHeader = request.getHeader("Authorization");
 

@@ -135,5 +135,43 @@
             window.location.href = "login.html";
         }
     </script>
+
+    <script>
+    async function initDashboard() {
+        const token = localStorage.getItem('token');
+        
+        // 1. Check if token exists
+        if (!token) {
+            window.location.href = 'login.html';
+            return;
+        }
+
+        // 2. Verified logged in, but skipping test fetch for now
+        console.log("Teacher logged in. Skipping test list fetch to focus on Create Test.");
+        
+        /* try {
+            const response = await fetch('/api/tests/my-tests', {
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (response.ok) {
+                const tests = await response.json();
+                console.log("Welcome Teacher! Tests loaded:", tests);
+            } else if (response.status === 403) {
+                alert("Unauthorized! Your session might have expired.");
+                window.location.href = '/login.html';
+            }
+        } catch (error) {
+            console.error("Dashboard Error:", error);
+        }
+        */
+    }
+
+    window.onload = initDashboard;
+</script>
 </body>
 </html>
