@@ -22,6 +22,16 @@ public class TestController {
     @Autowired
     private UserRepository userRepository;
 
+    @PostMapping("/{testId}/add-question/{questionId}")
+@PreAuthorize("hasRole('TEACHER')")
+public ResponseEntity<Test> addQuestionToTest(
+        @PathVariable Long testId, 
+        @PathVariable Long questionId) {
+    
+    Test updatedTest = testService.addQuestionToTest(testId, questionId);
+    return ResponseEntity.ok(updatedTest);
+}
+
     @PostMapping("/tests/create")
     @PreAuthorize("hasAnyRole('TEACHER', 'DEPARTMENT_ADMIN', 'SUPER_ADMIN')")
     public ResponseEntity<Test> createTest(@RequestBody TestRequestDTO dto, Principal principal) {

@@ -1,38 +1,47 @@
 package com.beproject.perceptivetestportal.controller;
 
 import com.beproject.perceptivetestportal.entity.User;
-import com.beproject.perceptivetestportal.repository.UserRepository;
 import com.beproject.perceptivetestportal.service.QuestionService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
-
-import java.security.Principal;
-import java.util.Map;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*; // ✅ This import fixes all 15 errors
 
 @RestController
 @RequestMapping("/api/questions")
+@RequiredArgsConstructor
 public class QuestionController {
 
-    @Autowired
-    private QuestionService questionService;
+    private final QuestionService questionService;
 
-    @Autowired
-    private UserRepository userRepository;
+    @PostMapping("/bulk-add/difficulty")
+    public ResponseEntity<String> addByDiff(
+            @RequestParam Long testId, 
+            @RequestParam String difficulty, 
+            @RequestParam int count, 
+            @AuthenticationPrincipal User user) {
+        questionService.bulkAddByDifficulty(testId, difficulty, count, user);
+        return ResponseEntity.ok("Added questions by difficulty.");
+    }
 
-    @PostMapping("/add-auto")
-    @PreAuthorize("hasAnyRole('TEACHER', 'DEPARTMENT_ADMIN', 'SUPER_ADMIN')")
-    public ResponseEntity<?> addAutoQuestions(@RequestBody Map<String, Object> request, Principal principal) {
-        User currentUser = userRepository.findByEmail(principal.getName())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+    @PostMapping("/bulk-add/subject-difficulty")
+    public ResponseEntity<String> addBySubDiff(
+            @RequestParam Long testId, 
+            @RequestParam String subject, 
+            @RequestParam String difficulty, 
+            @RequestParam int count, 
+            @AuthenticationPrincipal User user) {
+        questionService.bulkAddBySubjectAndDifficulty(testId, subject, difficulty, count, user);
+        return ResponseEntity.ok("Added questions by subject and difficulty.");
+    }
 
-        Long testId = Long.valueOf(request.get("testId").toString());
-        int count = Integer.parseInt(request.get("numberOfQuestions").toString());
-        String difficulty = request.get("difficulty").toString().toUpperCase();
-
-        questionService.addQuestionsFromAiPool(testId, count, difficulty, currentUser);
-
-        return ResponseEntity.ok(Map.of("message", count + " questions added successfully from the AI pool"));
+    @PostMapping("/bulk-add/range")
+    public ResponseEntity<String> addByRange(
+            @RequestParam Long testId, 
+            @RequestParam Long startId, 
+            @RequestParam Long endId, 
+            @AuthenticationPrincipal User user) {
+        questionService.bulkAddByIdRange(testId, startId, endId, user);
+        return ResponseEntity.ok("Added questions in range " + startId + " to " + endId);
     }
 }

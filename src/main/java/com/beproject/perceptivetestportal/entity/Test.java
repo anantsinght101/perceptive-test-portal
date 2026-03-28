@@ -77,11 +77,19 @@ public class Test {
 
     // Helper methods for relationships
     public void addQuestion(Question question) {
-        questions.add(question);
-        if (question.getTests() != null) {
-            question.getTests().add(this);
-        }
+    if (this.questions == null) {
+        this.questions = new ArrayList<>();
     }
+    this.questions.add(question);
+    
+    // Safety check for the other side of the relationship
+    if (question.getTests() == null) {
+        question.setTests(new ArrayList<>());
+    }
+    if (!question.getTests().contains(this)) {
+        question.getTests().add(this);
+    }
+}
 
     public void removeQuestion(Question question) {
         questions.remove(question);

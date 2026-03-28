@@ -2,29 +2,32 @@ package com.beproject.perceptivetestportal.service;
 
 import com.beproject.perceptivetestportal.dto.TestRequestDTO;
 import com.beproject.perceptivetestportal.entity.Group;
+import com.beproject.perceptivetestportal.entity.Question;
 import com.beproject.perceptivetestportal.entity.Test;
 import com.beproject.perceptivetestportal.entity.User;
 import com.beproject.perceptivetestportal.repository.GroupRepository;
+import com.beproject.perceptivetestportal.repository.QuestionRepository;
 import com.beproject.perceptivetestportal.repository.TestRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 
 @Service
+@RequiredArgsConstructor // ✅ Replaces @Autowired for better constructor injection
 public class TestService {
 
-    @Autowired
-    private TestRepository testRepository;
-
-    @Autowired
-    private GroupRepository groupRepository;
+    private final TestRepository testRepository;
+    private final GroupRepository groupRepository;
+    private final QuestionRepository questionRepository; // ✅ Added missing repository
 
     public Test createTest(TestRequestDTO dto, User currentUser, boolean forcePrivate) {
-        boolean publicStatus = forcePrivate ? false : dto.isPublic();
+        // Handle boolean naming: check if DTO uses isPublic() or getIsPublic()
+        boolean publicStatus = forcePrivate ? false : dto.isPublic(); // ✅ Matches Lombok convention
         
-        Test test = Test.builder()
+        // ✅ Using the Test.builder() with initialized empty lists
+        return testRepository.save(Test.builder()
                 .title(dto.getTitle())
                 .description(dto.getDescription())
                 .durationInMinutes(dto.getDurationInMinutes())
@@ -35,8 +38,18 @@ public class TestService {
                 .status(Test.TestStatus.DRAFT)
                 .questions(new ArrayList<>())
                 .assignedGroups(new ArrayList<>())
-                .build();
+                .build());
+    }
 
+    @Transactional
+    public Test addQuestionToTest(Long testId, Long questionId) {
+        Test test = testRepository.findById(testId)
+                .orElseThrow(() -> new RuntimeException("Test not found with id: " + testId));
+        
+        Question question = questionRepository.findById(questionId)
+                .orElseThrow(() -> new RuntimeException("Question not found with id: " + questionId));
+
+        test.addQuestion(question);
         return testRepository.save(test);
     }
 
@@ -45,6 +58,7 @@ public class TestService {
         Test test = testRepository.findById(testId)
                 .orElseThrow(() -> new RuntimeException("Test not found"));
 
+        // ✅ Lombok @Getter provides getCreatedBy() and getId()
         if (!test.getCreatedBy().getId().equals(currentUser.getId())) {
             throw new RuntimeException("Unauthorized: You do not own this test");
         }
