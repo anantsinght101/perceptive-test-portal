@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Quick Start Quiz | Perceptive</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(to bottom, rgba(92, 77, 66, 0.8) 0%, rgba(92, 77, 66, 0.8) 100%), 
+                        url("assets/img/portfolio/thumbnails/bg-masthead.jpg");    
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .header-bar {
+            display: flex; align-items: center; justify-content: space-between;
+            background-color: #5C4D42; padding: 10px 20px; color: white;
+            position: fixed; top: 0; width: 100%; z-index: 1000;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        .logo { height: 35px; margin-right: 10px; }
+        .back-button {
+            background-color: #DED7C7; color: black; padding: 6px 15px; 
+            border-radius: 4px; text-decoration: none; font-weight: bold; transition: 0.3s;
+        }
+        .back-button:hover { background-color: #A0522D; color: white; }
+        
+        .content { flex: 1; display: flex; align-items: center; justify-content: center; padding-top: 80px; }
+        
+        .quiz-card {
+            background: #DED7C7; border-radius: 12px; padding: 30px;
+            width: 100%; max-width: 600px; box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+        }
+        .quiz-header { font-weight: bold; color: #5C4D42; border-bottom: 2px solid #5C4D42; padding-bottom: 10px; margin-bottom: 20px; }
+        .form-label { font-weight: 600; color: #343a40; }
+        .btn-start { background-color: #5C4D42; color: white; font-weight: bold; border: none; padding: 10px; font-size: 1.1rem; }
+        .btn-start:hover { background-color: #3d332c; color: white; }
+    </style>
+</head>
+<body>
+
+<div class="header-bar">
+    <div class="d-flex align-items-center">
+        <img src="/assets/img/logo.png" alt="Logo" class="logo">
+        <span class="fs-4 fw-bold">Perceptive</span>
+    </div>
+    <a href="/student/dashboard" class="back-button"><i class="fas fa-arrow-left"></i> Dashboard</a>
+</div>
+
+<div class="content container">
+    <div class="quiz-card">
+        <h3 class="quiz-header text-center"><i class="fas fa-bolt text-warning"></i> Quick Start Quiz</h3>
+        <p class="text-center text-muted mb-4">Select your parameters to generate an instant practice assessment.</p>
+        
+        <form id="quickStartForm">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label"><i class="fas fa-book"></i> Subject</label>
+                    <select class="form-select" name="subject" required>
+                        <option value="" selected disabled>Choose Subject...</option>
+                        <option value="Java">Java</option>
+                        <option value="Python">Python</option>
+                        <option value="C++">C++</option>
+                        <option value="Aptitude">Aptitude</option>
+                        <option value="Logical Reasoning">Logical Reasoning</option>
+                    </select>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label"><i class="fas fa-signal"></i> Difficulty</label>
+                    <select class="form-select" name="difficulty" required>
+                        <option value="EASY">Beginner</option>
+                        <option value="MEDIUM" selected>Intermediate</option>
+                        <option value="HARD">Advanced</option>
+                    </select>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label"><i class="fas fa-list-ol"></i> No. of Questions</label>
+                    <input type="number" class="form-control" name="questionCount" min="5" max="50" value="10" required>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label"><i class="fas fa-stopwatch"></i> Total Time (Minutes)</label>
+                    <input type="number" class="form-control" name="totalTime" min="5" max="180" value="15" required>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <button type="submit" class="btn btn-start w-100 rounded-3">
+                    Generate & Start Test <i class="fas fa-arrow-right ms-2"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Security Guard
+    const token = localStorage.getItem('token');
+    if (!token) window.location.href = '/login';
+
+    document.getElementById('quickStartForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        // 1. Gather the selected parameters
+        const formData = new FormData(e.target);
+        const params = new URLSearchParams(formData).toString();
+        
+        // 2. Change the button state to show loading
+        const btn = e.target.querySelector('button[type="submit"]');
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparing your test...';
+        btn.disabled = true;
+
+
+        setTimeout(() => {
+            // Redirects to the actual exam taking interface with the parameters in the URL
+            window.location.href = `/student/instructions?${params}`;
+        }, 800); // Small delay for UX smoothness
+    });
+</script>
+</body>
+</html>

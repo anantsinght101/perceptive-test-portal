@@ -32,4 +32,41 @@ public String teacherDashboard() {
 public String createTestPage() {
     return "forward:/create-test.html"; // Returns the static HTML file
 }
+
+@GetMapping("/student/dashboard")
+    public String studentDashboard() {
+        return "forward:/student-dashboard.html"; 
+    }
+
+    @GetMapping("/student/take-test")
+    public String takeTestPage() {
+        return "forward:/take-test.html"; 
+    }
+
+// --- STUDENT ROUTES ---
+
+    @GetMapping("/student/quick-start-quiz")
+    public String quickStartQuizPage() {
+        return "forward:/quick-start-quiz.html"; 
+    }
+
+    @GetMapping("/student/exam-room")
+    public String examRoomPage() {
+        return "forward:/exam-room.html"; 
+    }
+
+    // Add this to your Student Routes in WelcomeController
+    @GetMapping("/student/instructions")
+    public String instructionsPage() {
+        return "forward:/instructions.html"; 
+    }
+
+    @GetMapping("/student/test-summary")
+    public String testSummaryPage() {
+        return "forward:/test-summary.html"; 
+    }
+@GetMapping("/student/result")
+    public String testResultPage() {
+        return "forward:/result.html"; 
+    }
 }

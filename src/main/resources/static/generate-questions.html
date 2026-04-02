@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perceptive AI | AI Question Generator</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(to bottom, rgba(30, 39, 46, 0.9) 0%, rgba(30, 39, 46, 0.9) 100%);
+            font-family: 'Inter', sans-serif; color: #f8f9fa; min-height: 100vh;
+        }
+        .header-bar { background: #050505; padding: 15px; text-align: center; margin-bottom: 30px; }
+        .card { background: #2f3640; border: none; color: white; border-radius: 12px; max-width: 800px; margin: auto; }
+        .form-control, .form-select { background: #353b48; border: 1px solid #485460; color: white; }
+        .form-control:focus, .form-select:focus { background: #485460; color: white; border-color: #00a8ff; box-shadow: none; }
+        
+        /* AI Processing Overlay */
+        #loadingOverlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); z-index: 9999; flex-direction: column;
+            justify-content: center; align-items: center;
+        }
+        .spinner-border { width: 3rem; height: 3rem; color: #00a8ff; }
+        
+        .btn-ai { background: linear-gradient(45deg, #00a8ff, #0097e6); border: none; color: white; font-weight: bold; padding: 12px; transition: 0.3s; }
+        .btn-ai:hover { transform: scale(1.02); box-shadow: 0 0 15px rgba(0,168,255,0.4); }
+        
+        #resultContainer { display: none; margin-top: 30px; }
+        pre { background: #1e272e; padding: 15px; border-radius: 8px; color: #00d2d3; overflow-x: auto; }
+    </style>
+</head>
+<body>
+
+    <div id="loadingOverlay">
+        <div class="spinner-border mb-3" role="status"></div>
+        <h4 class="text-info">🤖 AI Pipeline is processing your PDF...</h4>
+        <p class="text-muted">This may take 30-60 seconds depending on the document length.</p>
+    </div>
+
+    <div class="header-bar">
+        <h2 class="h4 mb-0"><i class="fas fa-microchip me-2"></i>Perceptive AI | Smart MCQ Generator</h2>
+    </div>
+
+    <div class="container mb-5">
+        <div class="card p-4 shadow-lg">
+            <h4 class="mb-4"><i class="fas fa-file-pdf me-2"></i>Upload Source Document</h4>
+            
+            <form id="aiGenerationForm">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Subject / Topic</label>
+                        <input type="text" name="subject" class="form-control" placeholder="e.g. Operating Systems" required>
+                    </div>
+
+                    <div class="col-md-6">
+                <label class="form-label">Generation Mode (AI Intensity)</label>
+                <select name="mode" class="form-select">
+                    <option value="none">Basic (None - No verification)</option>
+                    <option value="fast" selected>Standard (Fast - Balanced)</option>
+                    <option value="full">High Quality (Full - Intense AI check)</option>
+                </select>
+                <small class="text-muted">Fast is recommended for most PDFs.</small>
+                     </div>
+
+                    <div class="col-md-12">
+                        <label class="form-label">Number of Questions to Generate</label>
+                        <input type="range" class="form-range" name="num" min="5" max="50" step="5" id="numRange" oninput="numOutput.value = numRange.value">
+                        <div class="text-center"><output id="numOutput">20</output> Questions</div>
+                    </div>
+
+                    <div class="col-md-12 mt-4">
+                        <div class="p-4 border-dashed rounded text-center" style="border: 2px dashed #485460; background: rgba(255,255,255,0.05);">
+                            <i class="fas fa-cloud-upload-alt fa-3x mb-3 text-muted"></i>
+                            <input type="file" name="pdf" class="form-control" accept="application/pdf" required>
+                            <small class="text-muted d-block mt-2">Maximum file size: 10MB (PDF format only)</small>
+                        </div>
+                    </div>
+
+                    <div class="col-md-12 mt-4">
+                        <button type="submit" class="btn btn-ai w-100">
+                            <i class="fas fa-magic me-2"></i>GENERATE MCQs VIA AI PIPELINE
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div id="resultContainer" class="mt-4" style="display: none;">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="text-info"><i class="fas fa-robot me-2"></i> Generated Questions</h3>
+        <span class="badge bg-primary" id="questionCountBadge">0 Questions</span>
+    </div>
+
+    <div id="questionsGrid" class="row g-4"></div>
+
+    <div class="mt-5 mb-5">
+        <button class="btn btn-success btn-lg w-100 shadow" onclick="saveToDatabase()">
+            <i class="fas fa-save me-2"></i> SAVE ALL TO QUESTION BANK
+        </button>
+    </div>
+</div>
+
+<script>
+    const form = document.getElementById('aiGenerationForm');
+    const overlay = document.getElementById('loadingOverlay');
+    const resultContainer = document.getElementById('resultContainer');
+    const grid = document.getElementById('questionsGrid');
+
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        overlay.style.display = 'flex';
+        grid.innerHTML = ''; // Clear previous results
+        
+        const formData = new FormData(form);
+        const token = localStorage.getItem('token');
+
+        try {
+            const response = await fetch('/api/ai/generate', {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + token },
+                body: formData
+            });
+
+            if (response.ok) {
+                const questions = await response.json();
+                window.generatedQuestions = questions;
+                renderQuestions(questions);
+                overlay.style.display = 'none';
+                resultContainer.style.display = 'block';
+                window.scrollTo({ top: resultContainer.offsetTop - 50, behavior: 'smooth' });
+            } else {
+                const err = await response.text();
+                alert(err);
+                overlay.style.display = 'none';
+            }
+        } catch (error) {
+            alert("Connection error. Check if your Spring Boot and Python script are running.");
+            overlay.style.display = 'none';
+        }
+    });
+
+    function renderQuestions(questions) {
+    const grid = document.getElementById('questionsGrid');
+    const badge = document.getElementById('questionCountBadge');
+    
+    badge.innerText = `${questions.length} Questions`;
+    grid.innerHTML = ''; // Clear existing
+
+    questions.forEach((q, index) => {
+        const card = document.createElement('div');
+        card.className = 'col-md-6 mb-4';
+        
+        // Match the keys from your AI output
+        const correctAnswerText = q.answer_text;
+        const options = q.options;
+
+        const optionsHtml = options.map((opt, i) => {
+            // Check if this option is the correct one
+            const isCorrect = (opt === correctAnswerText);
+            
+            return `
+                <div class="p-2 mb-2 rounded ${isCorrect ? 'bg-success bg-opacity-25 border border-success' : 'bg-dark bg-opacity-50 border border-secondary text-white-50'}">
+                    <strong>${String.fromCharCode(65 + i)}.</strong> ${opt}
+                    ${isCorrect ? '<i class="fas fa-check-circle float-end text-success mt-1"></i>' : ''}
+                </div>
+            `;
+        }).join('');
+
+        card.innerHTML = `
+            <div class="card h-100 shadow-sm border-0" style="background: #2d3436; border-left: 5px solid #00a8ff !important;">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <h6 class="text-info mb-3">Question ${index + 1}</h6>
+                        <small class="text-muted text-uppercase" style="font-size: 0.7rem;">Page: ${q.page}</small>
+                    </div>
+                    <p class="card-text fw-bold mb-4" style="color: #dfe6e9;">${q.question}</p>
+                    <div class="options-container">
+                        ${optionsHtml}
+                    </div>
+                    <div class="mt-3 pt-2 border-top border-secondary">
+                        <small class="text-muted">Verified Answer: <span class="text-success fw-bold">${correctAnswerText}</span></small>
+                    </div>
+                </div>
+            </div>
+        `;
+        grid.appendChild(card);
+    });
+}
+    
+
+    async function saveToDatabase() {
+    // Look at the window object instead of a local variable
+    const questionsToSave = window.generatedQuestions;
+
+    if (!questionsToSave || questionsToSave.length === 0) {
+        alert("No questions found to save. Please generate questions first.");
+        return;
+    }
+
+    const token = localStorage.getItem('token');
+    const subjectInput = document.querySelector('input[name="subject"]');
+    const subjectValue = subjectInput ? subjectInput.value : "General";
+
+    // 2. Map AI Python JSON to QuestionRequestDTO format
+    // Python: question, options, answer_text
+    // Java DTO: content, options, correctAnswer
+    const payload = window.generatedQuestions.map(q => ({
+        content: q.question,
+        subject: subjectValue,
+        difficulty: "MEDIUM", // Service will override this anyway, but good to send
+        type: "MCQ",
+        options: q.options,
+        correctAnswer: q.answer_text
+    }));
+
+    // 3. Send to the new bulk-save-ai endpoint
+    try {
+        // We pass subject as a Query Param as per our Controller @RequestParam
+        const url = `/api/questions/bulk-save-ai?subject=${encodeURIComponent(subjectValue)}`;
+        
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token 
+            },
+            body: JSON.stringify(payload)
+        });
+
+        if (response.ok) {
+            alert("Questions successfully saved to the Question Bank!");
+            // Remove the questions to prevent double saving, or just leave them there to view
+            // window.generatedQuestions = [];
+            // document.getElementById('resultContainer').style.display = 'none';
+        } else {
+            const errorText = await response.text();
+            alert("Failed to save: " + errorText);
+        }
+    } catch (error) {
+        console.error("Save Error:", error);
+        alert("Network error while saving to database.");
+    }
+}
+</script>
+</body>
+</html>

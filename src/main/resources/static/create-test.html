@@ -47,10 +47,11 @@
                     </div>
                     <div class="col-md-6 mb-3">
                         <label class="form-label">Visibility</label>
-                        <select name="isPublic" class="form-control">
-                            <option value="false">Private (Assigned Only)</option>
+                        <select name="isPublic" class="form-control" id="visibilitySelect">
+                            <option value="false">Private (Assigned Only) / Draft</option>
                             <option value="true">Public (Open for All)</option>
                         </select>
+                        <small class="text-warning d-none mt-1" id="draftWarning">Forced to Private/Draft because no questions will be added.</small>
                     </div>
                     <div class="col-md-6 mb-3">
                         <label class="form-label">Start Time</label>
@@ -62,9 +63,71 @@
                     </div>
                 </div>
 
-                <button type="submit" class="btn btn-primary mt-3">CREATE TEST CONTAINER</button>
+                <hr class="mt-2 mb-4 border-secondary">
+                <h5 class="text-info mb-3"><i class="fas fa-tasks me-2"></i>Add Questions (Optional)</h5>
+                
+                <div class="row">
+                    <div class="col-md-12 mb-3">
+                        <label class="form-label">Assignment Method</label>
+                        <select id="assignMethod" class="form-control" onchange="toggleQuestionFields()">
+                            <option value="DIFFICULTY">By Difficulty Level</option>
+                            <option value="SUBJECT_DIFFICULTY">By Subject & Difficulty Level</option>
+                            <option value="RANGE">By Question ID Range</option>
+                        </select>
+                    </div>
+                </div>
 
-                <hr class="mt-4">
+                <!-- Fields for Difficulty -->
+                <div class="row question-fields d-none text-white-50" id="fields-difficulty">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label text-white">Difficulty</label>
+                        <select id="diff-level" class="form-control">
+                            <option value="EASY">Easy</option>
+                            <option value="MEDIUM" selected>Medium (AI Default)</option>
+                            <option value="HARD">Hard</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label text-white">Number of Questions</label>
+                        <input type="number" id="diff-count" class="form-control" min="1" value="5">
+                    </div>
+                </div>
+
+                <!-- Fields for Subject & Difficulty -->
+                <div class="row question-fields d-none text-white-50" id="fields-subject-difficulty">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label text-white">Subject</label>
+                        <input type="text" id="sub-subject" class="form-control" placeholder="e.g. Java">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label text-white">Difficulty</label>
+                        <select id="sub-level" class="form-control">
+                            <option value="EASY">Easy</option>
+                            <option value="MEDIUM" selected>Medium (AI Default)</option>
+                            <option value="HARD">Hard</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label text-white">Number of Questions</label>
+                        <input type="number" id="sub-count" class="form-control" min="1" value="5">
+                    </div>
+                </div>
+
+                <!-- Fields for Range -->
+                <div class="row question-fields d-none text-white-50" id="fields-range">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label text-white">Start Question ID</label>
+                        <input type="number" id="range-start" class="form-control" min="1">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label text-white">End Question ID</label>
+                        <input type="number" id="range-end" class="form-control" min="1">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary mt-4" id="submitBtn">CREATE TEST & ADD QUESTIONS</button>
+
+                <hr class="mt-4 border-secondary">
                 <div class="text-center">
                     <p class="text-muted small mb-2">Assignment Actions (Coming Soon)</p>
                     <div class="d-flex gap-2">
@@ -77,16 +140,42 @@
     </div>
 
     <script>
+        function toggleQuestionFields() {
+            document.querySelectorAll('.question-fields').forEach(el => el.classList.add('d-none'));
+            const method = document.getElementById('assignMethod').value;
+            const visibilitySelect = document.getElementById('visibilitySelect');
+            const draftWarning = document.getElementById('draftWarning');
+            const submitBtn = document.getElementById('submitBtn');
+            
+            if (method === 'DIFFICULTY') document.getElementById('fields-difficulty').classList.remove('d-none');
+            if (method === 'SUBJECT_DIFFICULTY') document.getElementById('fields-subject-difficulty').classList.remove('d-none');
+            if (method === 'RANGE') document.getElementById('fields-range').classList.remove('d-none');
+
+            visibilitySelect.disabled = false;
+            draftWarning.classList.add('d-none');
+            submitBtn.innerText = "CREATE TEST & ADD QUESTIONS";
+        }
+
+        // Initialize UI state
+        toggleQuestionFields();
+
         document.getElementById('createTestForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const token = localStorage.getItem('token');
             const formData = new FormData(e.target);
             const data = Object.fromEntries(formData.entries());
             
-            // Convert string "true"/"false" to actual boolean
-            data.isPublic = data.isPublic === "true";
+            const assignMethod = document.getElementById('assignMethod').value;
+            
+            // Re-read visibility since disabled selects aren't fully included in FormData correctly
+            data.isPublic = document.getElementById('visibilitySelect').value === "true";
+
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.innerText = "CREATING TEST...";
 
             try {
+                // Step 1: Create Test configuration
                 const response = await fetch('/api/tests/create', {
                     method: 'POST',
                     headers: { 
@@ -96,15 +185,68 @@
                     body: JSON.stringify(data)
                 });
 
-                if (response.ok) {
-                    alert("Test Created Successfully!");
-                    window.location.href = "teacher-dashboard.html";
-                } else {
+                if (!response.ok) {
                     alert("Failed to create test. Please check permissions.");
+                    submitBtn.disabled = false;
+                    toggleQuestionFields(); // reset button text
+                    return;
                 }
+
+                const testResult = await response.json();
+                const testId = testResult.id;
+
+                // Step 2: Add Questions if assigned
+                let questionsAdded = false;
+                submitBtn.innerText = "ADDING QUESTIONS...";
+                
+                let addUrl = '';
+                const queryParams = new URLSearchParams();
+                queryParams.append("testId", testId);
+
+                if (assignMethod === 'DIFFICULTY') {
+                    addUrl = '/api/questions/bulk-add/difficulty';
+                    queryParams.append("difficulty", document.getElementById('diff-level').value);
+                    queryParams.append("count", document.getElementById('diff-count').value);
+                } else if (assignMethod === 'SUBJECT_DIFFICULTY') {
+                    addUrl = '/api/questions/bulk-add/subject-difficulty';
+                    queryParams.append("subject", document.getElementById('sub-subject').value);
+                    queryParams.append("difficulty", document.getElementById('sub-level').value);
+                    queryParams.append("count", document.getElementById('sub-count').value);
+                } else if (assignMethod === 'RANGE') {
+                    addUrl = '/api/questions/bulk-add/range';
+                    queryParams.append("startId", document.getElementById('range-start').value);
+                    queryParams.append("endId", document.getElementById('range-end').value);
+                }
+
+                try {
+                    const addResponse = await fetch(addUrl + '?' + queryParams.toString(), {
+                        method: 'POST',
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+
+                    if (addResponse.ok) {
+                        questionsAdded = true;
+                    } else {
+                        console.error("Failed to add questions:", await addResponse.text());
+                    }
+                } catch (addError) {
+                    console.error("Network error adding questions:", addError);
+                }
+
+                // Conclusion Alert Display
+                if (!questionsAdded) {
+                    alert("Warning: Test is empty (0 questions found for criteria) and cannot be published. Handled as Draft/Private.");
+                } else {
+                    alert("Success! Test created and questions populated successfully.");
+                }
+                
+                window.location.href = "teacher-dashboard.html";
+
             } catch (err) {
                 console.error(err);
                 alert("Server error. Check connection.");
+                submitBtn.disabled = false;
+                toggleQuestionFields();
             }
         });
     </script>

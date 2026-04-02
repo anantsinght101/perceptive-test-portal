@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
-
+import java.util.List;
 @Service
 @RequiredArgsConstructor // ✅ Replaces @Autowired for better constructor injection
 public class TestService {
@@ -70,5 +70,9 @@ public class TestService {
             test.assignToGroup(group);
             testRepository.save(test);
         }
+    }
+
+    public List<Test> getTestsByUser(User currentUser) {
+        return testRepository.findByCreatedBy(currentUser);
     }
 }

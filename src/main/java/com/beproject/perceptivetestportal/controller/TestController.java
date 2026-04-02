@@ -1,4 +1,8 @@
 package com.beproject.perceptivetestportal.controller;
+import com.beproject.perceptivetestportal.dto.StudentTestSubmissionDTO;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import java.util.Map;
 
 import com.beproject.perceptivetestportal.dto.TestRequestDTO;
 import com.beproject.perceptivetestportal.entity.Test;
@@ -6,9 +10,9 @@ import com.beproject.perceptivetestportal.entity.User;
 import com.beproject.perceptivetestportal.service.TestService;
 import com.beproject.perceptivetestportal.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
+
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+
 
 import java.security.Principal;
 
@@ -48,5 +52,29 @@ public ResponseEntity<Test> addQuestionToTest(
         return ResponseEntity.ok(testService.createTest(dto, currentUser, true));
     }
 
+    @GetMapping("/tests/my-tests")
+    @PreAuthorize("hasAnyRole('TEACHER', 'DEPARTMENT_ADMIN', 'SUPER_ADMIN')")
+    public ResponseEntity<java.util.List<Test>> getMyTests(Principal principal) {
+        User currentUser = userRepository.findByEmail(principal.getName())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        return ResponseEntity.ok(testService.getTestsByUser(currentUser));
+    }
+
+
+
+   @PostMapping("/tests/submit-quiz") // Now the URL is /api/tests/submit-quiz
+public ResponseEntity<?> submitQuiz(@RequestBody StudentTestSubmissionDTO submission) {
+        System.out.println("Received submission for: " + submission.getSubject());
+        System.out.println("Answers: " + submission.getAnswers());
+
+        // TODO later: Grade the test and save to the database using your Test/Result entity
+        // int finalScore = testService.gradeAndSaveQuiz(submission);
         
+        // Dummy response so the frontend Javascript works
+        return ResponseEntity.ok(Map.of(
+            "message", "Test submitted successfully!",
+            "score", 0 // We will update this later
+        ));
+    }
+
 }
